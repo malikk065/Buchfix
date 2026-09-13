@@ -30,11 +30,28 @@ jobs:
         run: |
           ICONSET=ios/App/App/Assets.xcassets/AppIcon.appiconset
           SPLASH=ios/App/App/Assets.xcassets/Splash.imageset
-          cp www/icons/appicon-1024.png "$ICONSET/AppIcon-512@2x.png"
-          for f in splash-2732x2732.png splash-2732x2732-1.png; do
-            cp www/icons/splash-2732.png "$SPLASH/$f"
-          done
-          cp www/icons/splash-2732-dark.png "$SPLASH/splash-2732x2732-2.png"
+
+          # Icon: fertige 1024er nehmen, sonst aus der groessten vorhandenen bauen.
+          if [ -f www/icons/appicon-1024.png ]; then
+            cp www/icons/appicon-1024.png "$ICONSET/AppIcon-512@2x.png"
+            echo "1024er Icon uebernommen."
+          elif [ -f www/icons/icon-512.png ]; then
+            sips -z 1024 1024 www/icons/icon-512.png --out "$ICONSET/AppIcon-512@2x.png" >/dev/null
+            echo "Icon aus icon-512.png hochgerechnet."
+          else
+            echo "Kein Icon gefunden - Capacitor-Standard bleibt."
+          fi
+
+          # Startbild ist optional. Fehlt es, bleibt der Standard.
+          if [ -f www/icons/splash-2732.png ]; then
+            cp www/icons/splash-2732.png "$SPLASH/splash-2732x2732.png"
+            cp www/icons/splash-2732.png "$SPLASH/splash-2732x2732-1.png"
+            [ -f www/icons/splash-2732-dark.png ] \
+              && cp www/icons/splash-2732-dark.png "$SPLASH/splash-2732x2732-2.png"
+            echo "Startbild uebernommen."
+          else
+            echo "Kein Startbild vorhanden - Standard bleibt."
+          fi
 
       - name: Berechtigungen und Ausrichtung setzen
         run: |
@@ -59,7 +76,7 @@ jobs:
         working-directory: ios/App
         run: pod install --repo-update
 
-      - name: App bauen (ohne Signatur)
+      - name: App bauen
         working-directory: ios/App
         run: |
           xcodebuild \
@@ -75,13 +92,39 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             DEVELOPMENT_TEAM=""
 
+      - name: Platzhalter-Signatur setzen
+        working-directory: ios/App
+        run: |
+          APP="build/App.xcarchive/Products/Applications/App.app"
+
+          # Eingebettete Frameworks zuerst, von innen nach aussen.
+          if [ -d "$APP/Frameworks" ]; then
+            for F in "$APP/Frameworks"/*; do
+              [ -e "$F" ] || continue
+              codesign --force --sign - --timestamp=none "$F"
+              echo "signiert: $(basename "$F")"
+            done
+          fi
+
+          # Dann die App selbst.
+          codesign --force --sign - --timestamp=none "$APP"
+
+          echo "--- Ergebnis ---"
+          codesign -dv "$APP" 2>&1 | head -8
+
       - name: .ipa packen
         working-directory: ios/App
         run: |
+          rm -rf Payload
           mkdir -p Payload
           cp -R build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -qry BuchFix.ipa Payload
+
+          # Ohne -y: Symlinks werden aufgeloest. Sonst stolpert iOS darueber.
+          zip -qr BuchFix.ipa Payload -x "*.DS_Store"
           ls -lh BuchFix.ipa
+
+          # Gegenprobe: liegt die App an der richtigen Stelle im Archiv?
+          unzip -l BuchFix.ipa | head -5
 
       - uses: actions/upload-artifact@v4
         with:
