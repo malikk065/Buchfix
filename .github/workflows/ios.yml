@@ -1,0 +1,90 @@
+name: iPhone-App bauen (.ipa)
+
+# Startet über den Knopf "Run workflow" im Tab Actions.
+# Das Xcode-Projekt wird hier erzeugt — es muss nicht im Repository liegen.
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  ipa:
+    name: BuchFix.ipa
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Abhängigkeiten installieren
+        run: npm install
+
+      - name: Xcode-Projekt erzeugen
+        run: |
+          npx cap add ios || npx cap sync ios
+
+      - name: App-Icon und Startbild einsetzen
+        run: |
+          ICONSET=ios/App/App/Assets.xcassets/AppIcon.appiconset
+          SPLASH=ios/App/App/Assets.xcassets/Splash.imageset
+          cp www/icons/appicon-1024.png "$ICONSET/AppIcon-512@2x.png"
+          for f in splash-2732x2732.png splash-2732x2732-1.png; do
+            cp www/icons/splash-2732.png "$SPLASH/$f"
+          done
+          cp www/icons/splash-2732-dark.png "$SPLASH/splash-2732x2732-2.png"
+
+      - name: Berechtigungen und Ausrichtung setzen
+        run: |
+          P=ios/App/App/Info.plist
+          setze() {   # Schlüssel anlegen oder überschreiben
+            /usr/libexec/PlistBuddy -c "Delete :$1" "$P" 2>/dev/null || true
+            /usr/libexec/PlistBuddy -c "Add :$1 $2 $3" "$P"
+          }
+          setze NSCameraUsageDescription string "Zum Fotografieren von Belegen und Rechnungen."
+          setze NSPhotoLibraryUsageDescription string "Um gespeicherte Belegfotos auszuwählen."
+          setze NSPhotoLibraryAddUsageDescription string "Um Rechnungen und Auswertungen als PDF zu sichern."
+          setze ITSAppUsesNonExemptEncryption bool false
+          setze UIFileSharingEnabled bool true
+          setze LSSupportsOpeningDocumentsInPlace bool true
+          setze CFBundleDevelopmentRegion string de
+          /usr/libexec/PlistBuddy -c "Delete :UISupportedInterfaceOrientations" "$P" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" "$P"
+          /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string UIInterfaceOrientationPortrait" "$P"
+          echo "--- Info.plist ---"; /usr/libexec/PlistBuddy -c "Print" "$P" | head -40
+
+      - name: CocoaPods installieren
+        working-directory: ios/App
+        run: pod install --repo-update
+
+      - name: App bauen (ohne Signatur)
+        working-directory: ios/App
+        run: |
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$PWD/build/App.xcarchive" \
+            archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM=""
+
+      - name: .ipa packen
+        working-directory: ios/App
+        run: |
+          mkdir -p Payload
+          cp -R build/App.xcarchive/Products/Applications/App.app Payload/
+          zip -qry BuchFix.ipa Payload
+          ls -lh BuchFix.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BuchFix-ipa
+          path: ios/App/BuchFix.ipa
+          retention-days: 30
