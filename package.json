@@ -1,0 +1,19 @@
+{
+  "name": "buchfix",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Buchhaltung für Selbstständige — PWA und native App via Capacitor",
+  "scripts": {
+    "start": "npx serve . -l 5173",
+    "ios:init": "npx cap add ios",
+    "ios:sync": "npx cap sync ios",
+    "ios:open": "npx cap open ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
+    "@capacitor/splash-screen": "^6.0.3",
+    "serve": "^14.2.4"
+  }
+}

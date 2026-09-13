@@ -1,0 +1,25 @@
+{
+  "name": "BuchFix — Buchhaltung",
+  "short_name": "BuchFix",
+  "description": "Einnahmen, Ausgaben, Rechnungen, EÜR und EKS für Selbstständige.",
+  "lang": "de",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#F4F6F5",
+  "theme_color": "#0E1B2A",
+  "categories": ["finance", "business", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Ausgabe erfassen", "short_name": "Ausgabe", "url": "./index.html?neu=ausgabe", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Beleg fotografieren", "short_name": "Beleg", "url": "./index.html?neu=beleg", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Rechnung schreiben", "short_name": "Rechnung", "url": "./index.html?neu=rechnung", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

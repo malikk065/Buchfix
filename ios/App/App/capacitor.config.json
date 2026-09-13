@@ -1,0 +1,25 @@
+{
+	"appId": "de.buchfix.app",
+	"appName": "BuchFix",
+	"webDir": "www",
+	"ios": {
+		"contentInset": "always",
+		"backgroundColor": "#F4F6F5",
+		"limitsNavigationsToAppBoundDomains": false,
+		"scrollEnabled": true
+	},
+	"server": {
+		"iosScheme": "capacitor"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchAutoHide": true,
+			"launchShowDuration": 800,
+			"backgroundColor": "#0E1B2A",
+			"showSpinner": false
+		}
+	},
+	"packageClassList": [
+		"SplashScreenPlugin"
+	]
+}
